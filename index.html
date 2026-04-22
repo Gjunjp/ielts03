@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS互動模擬測驗3</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* 客製化滾動條以提升專業感 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .correct-answer { background-color: #dcfce7; border-color: #22c55e; }
+        .wrong-answer { background-color: #fee2e2; border-color: #ef4444; }
+        
+        /* 閱讀區域的左右分割 */
+        @media (min-width: 1024px) {
+            .split-view { display: flex; height: calc(100vh - 250px); }
+            .split-pane { flex: 1; overflow-y: auto; padding: 1.5rem; }
+            .split-pane:first-child { border-right: 2px solid #e2e8f0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col">
+
+    <header class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center z-10 shrink-0">
+        <div>
+            <h1 class="text-xl font-bold tracking-wider">IELTS互動模擬測驗3</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="bg-blue-800 px-4 py-2 rounded-lg font-mono text-xl shadow-inner flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span id="timer">02:30:00</span>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white shadow-sm shrink-0 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <div class="flex space-x-8" aria-label="Tabs">
+                <button onclick="switchTab('listening')" id="tab-listening" class="tab-btn active border-blue-500 text-blue-600 border-b-2 py-4 px-1 text-center font-medium text-lg focus:outline-none transition">
+                    🎧 聽力 (30 mins)
+                </button>
+                <button onclick="switchTab('reading')" id="tab-reading" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-center font-medium text-lg focus:outline-none transition">
+                    📖 閱讀 (60 mins)
+                </button>
+                <button onclick="switchTab('writing')" id="tab-writing" class="tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-center font-medium text-lg focus:outline-none transition">
+                    ✍️ 寫作 (60 mins)
+                </button>
+            </div>
+            <div class="flex items-center space-x-2 bg-gray-100 p-1 rounded-lg">
+                <button id="mode-academic" onclick="setMode('academic')" class="px-4 py-1.5 rounded-md bg-white shadow text-sm font-bold text-blue-800 transition">Academic (學術組)</button>
+                <button id="mode-general" onclick="setMode('general')" class="px-4 py-1.5 rounded-md text-sm font-bold text-gray-500 hover:text-gray-800 transition">General (移民組)</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="bg-indigo-50 border-b border-indigo-100 p-3 shrink-0 z-20 shadow-sm flex flex-wrap justify-center gap-4 items-center" id="student-info-bar">
+        <span class="font-bold text-indigo-900 text-lg">📝 考生資訊 (必填)：</span>
+        <input type="text" id="student-id" placeholder="學員編號" class="border border-indigo-200 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-32 md:w-48 shadow-inner transition-colors duration-300">
+        <input type="text" id="student-branch" placeholder="分校" class="border border-indigo-200 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-32 md:w-48 shadow-inner transition-colors duration-300">
+        <input type="text" id="student-name" placeholder="姓名" class="border border-indigo-200 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-32 md:w-48 shadow-inner transition-colors duration-300">
+    </div>
+
+    <main class="flex-1 overflow-hidden relative">
+        <div class="max-w-7xl mx-auto h-full">
+
+            <div id="content-listening" class="tab-content active h-full overflow-y-auto p-6">
+                <div id="listening-sections" class="space-y-8">
+                    </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-200 flex flex-col items-center pb-8">
+                    <button onclick="nextToReading()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-12 rounded-lg shadow-lg transition duration-200 text-xl w-full max-w-lg flex items-center justify-center">
+                        前往閱讀測驗 (Next: Reading) <svg class="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                    <div id="listening-score-display" class="hidden mt-4 text-2xl font-bold text-blue-800 bg-blue-100 px-8 py-3 rounded-xl shadow-inner border border-blue-200"></div>
+                </div>
+            </div>
+
+            <div id="content-reading" class="tab-content h-full">
+                <div class="split-view bg-white shadow-sm border-x border-b border-gray-200">
+                    <div class="split-pane bg-gray-50" id="reading-passage">
+                        </div>
+                    <div class="split-pane bg-white pb-12">
+                        <h3 class="text-2xl font-bold mb-6 text-blue-900 border-b-2 border-blue-100 pb-3">Questions (40 Items)</h3>
+                        <div id="reading-questions" class="space-y-8">
+                            </div>
+                        
+                        <div class="mt-10 pt-6 border-t border-gray-200 pb-8">
+                            <button onclick="nextToWriting()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-12 rounded-lg shadow-lg transition duration-200 text-xl w-full flex items-center justify-center">
+                                前往寫作測驗 (Next: Writing) <svg class="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </button>
+                            <div id="reading-score-display" class="hidden mt-4 text-center text-2xl font-bold text-blue-800 bg-blue-100 px-6 py-4 rounded-xl shadow-inner border border-blue-200"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="content-writing" class="tab-content h-full overflow-y-auto p-6">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+                    <div class="flex justify-between items-start mb-4 border-b pb-4">
+                        <h2 class="text-2xl font-bold text-gray-900">Writing Task 1</h2>
+                        <span class="bg-gray-200 text-gray-800 px-4 py-1.5 rounded-full text-sm font-bold shadow-inner">Suggested time: 20 mins</span>
+                    </div>
+                    <div class="bg-gray-50 border border-gray-200 p-5 rounded-lg mb-6 shadow-sm">
+                        <p id="writing-task1-prompt" class="font-medium text-gray-800 text-lg leading-relaxed"></p>
+                        <div id="writing-task1-data-container" class="mt-6 bg-white border border-gray-300 p-4 rounded hidden">
+                            <p id="writing-task1-data-title" class="font-bold mb-2 text-gray-700 text-center text-lg">Data Visualization</p>
+                            <ul id="writing-task1-data" class="list-disc pl-5 space-y-1 text-gray-600 hidden"></ul>
+                            <div class="relative w-full h-80 flex justify-center">
+                                <canvas id="task1-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <textarea id="task1-input" class="w-full h-56 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-lg leading-relaxed shadow-inner" placeholder="Write your answer here (minimum 150 words)..."></textarea>
+                    <div class="flex justify-between items-center mt-3 mb-6">
+                        <span class="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded">Word count: <span id="task1-word-count" class="text-blue-600">0</span></span>
+                    </div>
+
+                    <button id="btn-task1-sample" onclick="toggleSample('task1-sample')" class="hidden text-blue-600 font-bold hover:text-blue-800 flex items-center bg-blue-50 px-4 py-2 rounded-lg transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943-9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        查看 Band 8.0 範文與詳解 (Show Model Answer)
+                    </button>
+                    <div id="task1-sample" class="hidden mt-4 p-6 bg-green-50 border-2 border-green-200 rounded-xl text-gray-800 leading-relaxed text-lg shadow-sm"></div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+                    <div class="flex justify-between items-start mb-4 border-b pb-4">
+                        <h2 class="text-2xl font-bold text-gray-900">Writing Task 2</h2>
+                        <span class="bg-gray-200 text-gray-800 px-4 py-1.5 rounded-full text-sm font-bold shadow-inner">Suggested time: 40 mins</span>
+                    </div>
+                    <div class="bg-gray-50 border border-gray-200 p-5 rounded-lg mb-6 shadow-sm">
+                        <p id="writing-task2-prompt" class="font-medium text-gray-800 text-lg leading-relaxed"></p>
+                    </div>
+                    
+                    <textarea id="task2-input" class="w-full h-72 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-lg leading-relaxed shadow-inner" placeholder="Write your essay here (minimum 250 words)..."></textarea>
+                    <div class="flex justify-between items-center mt-3 mb-6">
+                        <span class="text-sm font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded">Word count: <span id="task2-word-count" class="text-blue-600">0</span></span>
+                    </div>
+
+                    <button id="btn-task2-sample" onclick="toggleSample('task2-sample')" class="hidden text-blue-600 font-bold hover:text-blue-800 flex items-center bg-blue-50 px-4 py-2 rounded-lg transition">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943-9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        查看 Band 8.0 範文與詳解 (Show Model Answer)
+                    </button>
+                    <div id="task2-sample" class="hidden mt-4 p-6 bg-green-50 border-2 border-green-200 rounded-xl text-gray-800 leading-relaxed text-lg shadow-sm"></div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200 flex flex-col items-center pb-12">
+                    <button id="submit-all-btn" onclick="gradeAll()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-12 rounded-lg shadow-lg transition duration-200 text-xl w-full max-w-lg tracking-wide">
+                        📝 提交全卷並查看成績
+                    </button>
+                    <div id="writing-score-display" class="hidden mt-6 text-left text-lg bg-blue-50 p-8 rounded-xl shadow-inner border border-blue-200 w-full"></div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="final-submission-banner" class="fixed bottom-0 left-0 w-full bg-indigo-900 text-white p-4 shadow-2xl flex flex-col md:flex-row justify-between items-center z-50 border-t-4 border-yellow-400 transform transition-transform translate-y-full hidden">
+        <div class="flex flex-wrap items-center gap-4 md:gap-6 mb-4 md:mb-0">
+            <span class="text-xl font-bold text-yellow-300">🎉 測驗完成！你的成績：</span>
+            <span class="text-lg">聽力: <strong id="summary-l" class="text-blue-300">-</strong></span>
+            <span class="text-lg">閱讀: <strong id="summary-r" class="text-blue-300">-</strong></span>
+            <span class="text-lg">寫作: <strong id="summary-w" class="text-blue-300">-</strong></span>
+            <span class="text-2xl font-black text-green-400 ml-2 md:ml-4 border-l-2 border-indigo-700 pl-4">Overall: <span id="summary-overall">-</span></span>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="submit-msg" class="font-bold text-yellow-300 hidden"></span>
+            <button id="submit-formspree-btn" onclick="submitToFormspree()" class="bg-green-500 hover:bg-green-400 text-indigo-900 font-bold py-2 px-6 rounded-full shadow-lg transition duration-200 text-lg animate-pulse border-2 border-white">
+                回傳成績 (必按)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 記錄當前模式 (academic 或 general)
+        let currentMode = 'academic';
+        let timerInterval;
+        
+        // 全局紀錄成績
+        window.testScores = {
+            listening: null,
+            reading: null,
+            writing: null,
+            overall: null
+        };
+
+        /**
+         * 系統核心資料庫 (全新題庫 - 第三套內容)
+         */
+        const ieltsData = {
+            listening: {
+                sections: [
+                    {
+                        title: "PART 1",
+                        instruction: "Questions 1-10<br>Listen to a telephone conversation between a customer and a car rental agent. Complete the form below.<br>Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.",
+                        transcript: `
+                            <strong>Agent:</strong> Good morning, Apex Car Rentals. This is Mark speaking. How can I help you?<br>
+                            <strong>Customer:</strong> Hello, I'm calling to rent a car for a weekend trip. My name is Sarah.<br>
+                            <strong>Agent:</strong> Great, Sarah. What dates do you need the vehicle for?<br>
+                            <strong>Customer:</strong> I'll be picking it up on the <strong>22nd</strong> of August.<br>
+                            <strong>Agent:</strong> The 22nd of August. And when will you be returning it?<br>
+                            <strong>Customer:</strong> On the <strong>25th</strong>.<br>
+                            <strong>Agent:</strong> Perfect. What type of vehicle are you looking for? We have compact cars, SUVs, or vans.<br>
+                            <strong>Customer:</strong> An <strong>SUV</strong> would be best, as we are going to the mountains.<br>
+                            <strong>Agent:</strong> Excellent choice. Do you need any extras? Like a GPS navigation system or a child seat?<br>
+                            <strong>Customer:</strong> Yes, we need one child <strong>seat</strong>, please.<br>
+                            <strong>Agent:</strong> Noted. The total comes to $<strong>145</strong> for the entire duration.<br>
+                            <strong>Customer:</strong> That sounds good. <br>
+                            <strong>Agent:</strong> Can I get your surname to complete the reservation, Sarah?<br>
+                            <strong>Customer:</strong> It's <strong>Higgins</strong>. H-I-G-G-I-N-S.<br>
+                            <strong>Agent:</strong> Thank you. And your email address for the confirmation?<br>
+                            <strong>Customer:</strong> It's s.higgins at <strong>mail.com</strong>.<br>
+                            <strong>Agent:</strong> And a contact number?<br>
+                            <strong>Customer:</strong> You can reach me on <strong>0912443881</strong>.<br>
+                            <strong>Agent:</strong> Great. And will you be picking it up from our city center or airport branch?<br>
+                            <strong>Customer:</strong> The <strong>airport</strong> branch, please.<br>
+                            <strong>Agent:</strong> Done. Please remember to bring your driver's license and a valid <strong>credit card</strong> when you arrive.<br>
+                            <strong>Customer:</strong> Will do. Thanks for your help!
+                        `,
+                        questions: [
+                            {
+                                type: 'fill', id: 'L_S1',
+                                text: 'Complete the booking form. (Q1 - Q10)',
+                                subQuestions: [
+                                    { id: 'L_S1_1', prefix: '1. Date of Pick-up: August', suffix: '', answer: '22nd', explanation: '顧客提到 "picking it up on the 22nd of August"。' },
+                                    { id: 'L_S1_2', prefix: '2. Date of Return: August', suffix: '', answer: '25th', explanation: '顧客確認在 "On the 25th" 歸還。' },
+                                    { id: 'L_S1_3', prefix: '3. Vehicle Type:', suffix: '', answer: 'suv', explanation: '顧客選擇了 "An SUV would be best"。' },
+                                    { id: 'L_S1_4', prefix: '4. Extra equipment requested: child', suffix: '', answer: 'seat', explanation: '顧客需要一個 "child seat"。' },
+                                    { id: 'L_S1_5', prefix: '5. Total Price: $', suffix: '', answer: '145', explanation: '總價為 "$145"。' },
+                                    { id: 'L_S1_6', prefix: '6. Customer Surname:', suffix: '', answer: 'higgins', explanation: '拼字為 H-I-G-G-I-N-S。' },
+                                    { id: 'L_S1_7', prefix: '7. Email: s.higgins @', suffix: '', answer: 'mail.com', explanation: 'Email 後綴為 mail.com。' },
+                                    { id: 'L_S1_8', prefix: '8. Contact Number:', suffix: '', answer: '0912443881', explanation: '電話為 0912443881。' },
+                                    { id: 'L_S1_9', prefix: '9. Pick-up Location:', suffix: 'branch', answer: 'airport', explanation: '顧客選擇在 "airport" (機場) 分店取車。' },
+                                    { id: 'L_S1_10', prefix: '10. Required documents: Driver\'s license and', suffix: '', answer: 'credit card', explanation: '業務提醒要帶駕照和 "credit card" (信用卡)。' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "PART 2",
+                        instruction: "Questions 11-20<br>Listen to a guide giving a tour of a new community recycling center. Answer the questions.",
+                        transcript: `
+                            <strong>Guide:</strong> Welcome, everyone, to the grand opening of our new Community Recycling Center. We are very proud of this modern facility. The primary objective of this center isn't to make money from scrap, but rather to educate the public about sustainable living.<br>
+                            We have several specific rules here. The most important rule is that all glass must be sorted by color before drop-off. As for our operating hours, we are open early from 7 AM every weekday. However, please note that on Saturdays, we open later at 9 AM. Dropping off general recyclables is free, but disposing of large electronic items requires a small $10 fee. Make sure you don't miss our special event next Thursday: a free compost-making workshop.<br><br>
+                            Now, let's take a quick look at the site map. The main Paper and Cardboard bins are located in the North section of the yard. If you have any Garden Waste, you'll need to drive over to the East zone. The facility for Electronic Waste is situated in the South area, near the exit gates. If you need assistance, the Staff Office is right in the Centre of the compound. Finally, our second-hand Charity Shop can be found on the West side, next to the main entrance.
+                        `,
+                        questions: [
+                            {
+                                type: 'mcq', id: 'L_S2_11',
+                                text: '11. What is the primary objective of the recycling center?',
+                                options: ['A) To make money from scrap metal', 'B) To educate the public about sustainable living', 'C) To offer cheap second-hand goods'],
+                                answer: 'B',
+                                explanation: '導遊說主要目標是 "to educate the public about sustainable living"。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S2_12',
+                                text: '12. What is the most important rule regarding glass?',
+                                options: ['A) It must be washed cleanly.', 'B) It must be sorted by color.', 'C) It must not be broken.'],
+                                answer: 'B',
+                                explanation: '導遊提到最重要的規定是 "all glass must be sorted by color" (玻璃必須依顏色分類)。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S2_13',
+                                text: '13. How do the opening hours change on Saturdays?',
+                                options: ['A) The center opens earlier.', 'B) The center opens later.', 'C) The center is closed all day.'],
+                                answer: 'B',
+                                explanation: '導遊提醒 "on Saturdays, we open later at 9 AM" (星期六比較晚開)。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S2_14',
+                                text: '14. When do you have to pay a $10 fee?',
+                                options: ['A) When dropping off garden waste', 'B) When parking a large truck', 'C) When disposing of large electronic items'],
+                                answer: 'C',
+                                explanation: '導遊說 "disposing of large electronic items requires a small $10 fee"。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S2_15',
+                                text: '15. What special event is happening next Thursday?',
+                                options: ['A) A paper recycling demonstration', 'B) A compost-making workshop', 'C) A charity auction'],
+                                answer: 'B',
+                                explanation: '導遊提到下週四有 "a free compost-making workshop" (堆肥製作工作坊)。'
+                            },
+                            {
+                                type: 'matching', id: 'L_S2_16_20',
+                                text: 'Questions 16-20: Match each zone to its location on the map.',
+                                options: ['North', 'South', 'East', 'West', 'Centre'],
+                                subQuestions: [
+                                    { id: 'L_S2_16', text: '16. Paper and Cardboard bins', answer: 'North', explanation: '紙類和紙板回收桶位於 North section。' },
+                                    { id: 'L_S2_17', text: '17. Garden Waste', answer: 'East', explanation: '花園廢棄物需要開車到 East zone。' },
+                                    { id: 'L_S2_18', text: '18. Electronic Waste', answer: 'South', explanation: '電子廢棄物區位於 South area。' },
+                                    { id: 'L_S2_19', text: '19. Staff Office', answer: 'Centre', explanation: '員工辦公室位在場地的 Centre。' },
+                                    { id: 'L_S2_20', text: '20. Charity Shop', answer: 'West', explanation: '二手慈善商店位於 West side。' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "PART 3",
+                        instruction: "Questions 21-30<br>Read the transcript of two students, Alex and Sarah, discussing their psychology project on video games with their tutor, Dr. Lee. Answer the questions.",
+                        transcript: `
+                            <strong>Alex:</strong> Dr. Lee, we've finished the data collection for our video game psychology project. We compared action games with puzzle games. The hardest part of the process wasn't finding volunteers, but keeping them focused during the lengthy testing phase.<br>
+                            <strong>Sarah:</strong> Yes, it was exhausting. Originally, we hypothesized that action games would solely increase aggressive behavior. However, our data revealed that the most significant effect of action games was actually an improvement in visual reaction times.<br>
+                            <strong>Dr. Lee:</strong> That's a very common finding in modern literature. And what about the puzzle games?<br>
+                            <strong>Alex:</strong> Well, they definitely reduced stress levels. But the main complaint from participants wasn't about the games being too difficult, which surprised us. It was actually the lack of a strong storyline that bored them.<br>
+                            <strong>Sarah:</strong> Exactly. They lost motivation to finish the puzzles without a narrative context. <br>
+                            <strong>Dr. Lee:</strong> Excellent observations. Let's discuss who is doing what for the final report.<br>
+                            <strong>Alex:</strong> I'm going to write the methodology section and format the statistical tables.<br>
+                            <strong>Sarah:</strong> And I will draft the literature review and the final conclusion. But I'm having trouble finding reliable academic sources on virtual reality gaming.<br>
+                            <strong>Dr. Lee:</strong> I can lend you a textbook on that later. For your presentation, make sure you emphasize the potential of games in educational settings. It is a very hot topic right now.
+                        `,
+                        questions: [
+                            {
+                                type: 'mcq', id: 'L_S3_21',
+                                text: '21. What was the hardest part of the students\' research process?',
+                                options: ['A) Finding enough volunteers', 'B) Keeping volunteers focused', 'C) Setting up the computers'],
+                                answer: 'B',
+                                explanation: 'Alex 說最難的是 "keeping them focused during the lengthy testing phase" (讓他們在漫長測試中保持專注)。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S3_22',
+                                text: '22. What did they initially think action games would cause?',
+                                options: ['A) Worse eyesight', 'B) Slower reaction times', 'C) Increased aggressive behavior'],
+                                answer: 'C',
+                                explanation: 'Sarah 說最初假設動作遊戲會 "solely increase aggressive behavior" (僅增加攻擊行為)。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S3_23',
+                                text: '23. What was the actual most significant effect of action games?',
+                                options: ['A) Higher stress', 'B) Improvement in visual reaction times', 'C) Better memory'],
+                                answer: 'B',
+                                explanation: 'Sarah 指出最顯著的影響是 "an improvement in visual reaction times" (視覺反應時間的改善)。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S3_24',
+                                text: '24. What was the main complaint participants had about puzzle games?',
+                                options: ['A) They were too difficult.', 'B) The graphics were poor.', 'C) They lacked a strong storyline.'],
+                                answer: 'C',
+                                explanation: 'Alex 說主要的抱怨不是太難，而是 "the lack of a strong storyline that bored them" (缺乏強烈的故事線讓他們覺得無聊)。'
+                            },
+                            {
+                                type: 'mcq', id: 'L_S3_25',
+                                text: '25. What is Sarah currently struggling to find?',
+                                options: ['A) Books on stress management', 'B) Academic sources on virtual reality gaming', 'C) Data on puzzle games'],
+                                answer: 'B',
+                                explanation: 'Sarah 說她找不到足夠的 "reliable academic sources on virtual reality gaming" (關於虛擬實境遊戲的可靠學術來源)。'
+                            },
+                            {
+                                type: 'matching', id: 'L_S3_26_30',
+                                text: 'Questions 26-30: Match the person to the statement or action.',
+                                options: ['Dr. Lee', 'Alex', 'Sarah'],
+                                subQuestions: [
+                                    { id: 'L_S3_26', text: '26. Stated that players lost motivation without a narrative.', answer: 'Sarah', explanation: 'Sarah 說: "They lost motivation to finish the puzzles without a narrative context."' },
+                                    { id: 'L_S3_27', text: '27. Advised emphasizing the use of games in education.', answer: 'Dr. Lee', explanation: 'Dr. Lee 建議: "make sure you emphasize the potential of games in educational settings."' },
+                                    { id: 'L_S3_28', text: '28. Will format the statistical tables.', answer: 'Alex', explanation: 'Alex 說: "I\'m going to... format the statistical tables."' },
+                                    { id: 'L_S3_29', text: '29. Expected puzzle games to be criticized for being too hard.', answer: 'Alex', explanation: 'Alex 提到: "wasn\'t about the games being too difficult, which surprised us."' },
+                                    { id: 'L_S3_30', text: '30. Offered to lend a textbook on the topic.', answer: 'Dr. Lee', explanation: 'Dr. Lee 說: "I can lend you a textbook on that later."' }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        title: "PART 4",
+                        instruction: "Questions 31-40<br>Complete the notes below based on a university lecture about the history of rubber.<br>Write ONE WORD ONLY for each answer.",
+                        transcript: `
+                            <strong>Professor:</strong> Good morning. Today we will explore the history of a highly elastic material that modernized the world: rubber. <br>
+                            The story starts in South America. The indigenous people of the Amazon basin had been extracting sap from the rubber tree for centuries. They used it to make waterproof shoes and even a bouncy <strong>ball</strong> for playing games. When European explorers first encountered it in the 18th century, they noticed it was excellent at erasing pencil marks, which is why the British gave it the name <strong>rubber</strong>.<br>
+                            Despite its uses, early natural rubber had a massive flaw: it became sticky and melted in hot weather, and turned incredibly <strong>brittle</strong> in cold temperatures. This limited its industrial use. The major breakthrough occurred in 1839 when an American inventor named Charles Goodyear accidentally dropped a mixture of rubber and <strong>sulfur</strong> onto a hot stove.<br>
+                            This accident led to the discovery of vulcanization. The new vulcanized rubber was tough, weather-resistant, and elastic. Demand skyrocketed, leading to a massive economic boom in the Amazon known as the rubber <strong>barons</strong> era. However, this wealth was built on the brutal exploitation of native workers.<br>
+                            The geographic monopoly ended when a British smuggler secretly took rubber seeds to London, and eventually planted them in Southeast Asia. Today, plantations in Asia produce the vast majority of natural rubber. <br>
+                            During World War II, the supply of natural rubber was cut off, forcing scientists to rapidly invent <strong>synthetic</strong> rubber using petroleum. In the modern era, the biggest consumer of rubber by far is the global <strong>tire</strong> industry. However, disposing of these products is a major environmental issue, as rubber does not easily <strong>decompose</strong>. Scientists are now researching new ways to effectively <strong>recycle</strong> rubber to create a more sustainable future for the industry.
+                        `,
+                        questions: [
+                            {
+                                type: 'fill', id: 'L_S4',
+                                text: 'Complete the notes below. Write ONE WORD ONLY for each answer.',
+                                subQuestions: [
+                                    { id: 'L_S4_31', prefix: '31. Indigenous Amazonians used rubber to make a bouncy', suffix: 'for games.', answer: 'ball', explanation: '教授提到 "used it to make waterproof shoes and even a bouncy ball" (彈力球)。' },
+                                    { id: 'L_S4_32', prefix: '32. The British named it because it was good at erasing, or rubbing out, pencil marks.', answer: 'rubber', explanation: '因為可以擦去鉛筆痕跡，所以被命名為 "rubber" (橡皮擦/橡膠)。' },
+                                    { id: 'L_S4_33', prefix: '33. Early natural rubber became sticky in heat and very', suffix: 'in cold weather.', answer: 'brittle', explanation: '在冷天會變得非常 "brittle" (易碎的)。' },
+                                    { id: 'L_S4_34', prefix: '34. Charles Goodyear accidentally heated rubber mixed with', suffix: '.', answer: 'sulfur', explanation: '他意外將橡膠與 "sulfur" (硫磺) 的混合物掉在熱爐上。' },
+                                    { id: 'L_S4_35', prefix: '35. The economic boom in the Amazon created wealthy men known as rubber', suffix: '.', answer: 'barons', explanation: '亞馬遜的經濟繁榮創造了被稱為 rubber "barons" (橡膠大亨) 的時代。' },
+                                    { id: 'L_S4_36', prefix: '36. During WWII, a lack of supply led to the invention of', suffix: 'rubber.', answer: 'synthetic', explanation: '二戰期間發明了 "synthetic" (合成) 橡膠。' },
+                                    { id: 'L_S4_37', prefix: '37. Today, the biggest consumer of rubber is the', suffix: 'industry.', answer: 'tire', explanation: '現今最大的橡膠消費者是 "tire" (輪胎) 工業。 (英式拼法 tyre 亦可，系統抓 tire)' },
+                                    { id: 'L_S4_38', prefix: '38. A major environmental problem is that rubber does not', suffix: 'easily.', answer: 'decompose', explanation: '橡膠不容易 "decompose" (分解)。' },
+                                    { id: 'L_S4_39', prefix: '39. Scientists are currently looking for better ways to', suffix: 'old rubber products.', answer: 'recycle', explanation: '科學家正在尋找更好的方法來 "recycle" (回收) 橡膠。' },
+                                    { id: 'L_S4_40', prefix: '40. This is necessary for a more sustainable', suffix: 'for the industry.', answer: 'future', explanation: '這對於產業有更永續的 "future" (未來) 是必要的。' }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            reading: {
+                academic: {
+                    passages: [
+                        {
+                            title: "Passage 1: The History of Cryptography",
+                            passage: `
+                                <p class="mb-4">Cryptography, the practice of secure communication in the presence of third parties, has shaped the outcome of wars, diplomacy, and modern commerce. The earliest forms of cryptography were simply substitution ciphers. Around 1900 BC, an Egyptian scribe used non-standard hieroglyphs in an inscription, not necessarily to hide the meaning, but to add an element of mystery and amusement. True military encryption emerged with the Spartans in ancient Greece, who used a device called a scytale. A strip of parchment was wrapped around a wooden cylinder of a specific diameter, and a message was written across the overlapping edges. When unwrapped, the letters appeared scrambled; it could only be read by someone possessing a cylinder of the exact same thickness.</p>
+                                <p class="mb-4">One of the most famous early ciphers is the Caesar cipher, used by Julius Caesar to protect his military commands. It is a highly basic substitution cipher where each letter in the plaintext is shifted a certain number of places down the alphabet. For instance, with a shift of three, 'A' becomes 'D'. While effective against an illiterate enemy, it was mathematically weak. In the 9th century, Arab mathematician Al-Kindi discovered "frequency analysis," a method of breaking substitution ciphers by analyzing the frequency of certain letters (like 'E' or 'A' in English) in the encrypted text. This discovery rendered simple substitution ciphers obsolete.</p>
+                                <p class="mb-4">The 20th century witnessed a leap in cryptographic complexity with the invention of rotor machines, most famously the German Enigma machine used during World War II. The Enigma utilized an electromechanical rotor system to continuously scramble the substitution alphabet with every key pressed, generating billions of possible combinations. Breaking the Enigma code was deemed impossible, yet a team of Polish and British mathematicians, led by Alan Turing, successfully cracked it by building early electro-mechanical computers known as "bombes." Their success in decrypting German communications significantly shortened the war.</p>
+                            `,
+                            questions: [
+                                {
+                                    type: 'tfng', id: 'RA_P1_TF', text: 'Questions 1-7: Do the following statements agree with the information given? (TRUE / FALSE / NOT GIVEN)',
+                                    subQuestions: [
+                                        { id: 'RA_1', text: '1. The earliest Egyptian inscription used non-standard hieroglyphs strictly to hide military secrets.', answer: 'FALSE', explanation: '第一段明確指出 not necessarily to hide the meaning, but to add an element of mystery and amusement (並非為了隱藏秘密，而是增加趣味)。' },
+                                        { id: 'RA_2', text: '2. The Spartan scytale required two wooden cylinders of the exact same thickness to work.', answer: 'TRUE', explanation: '第一段提到 could only be read by someone possessing a cylinder of the exact same thickness。' },
+                                        { id: 'RA_3', text: '3. Julius Caesar invented his cipher to communicate with his family.', answer: 'FALSE', explanation: '第二段指出是用來 protect his military commands (保護軍事命令)。' },
+                                        { id: 'RA_4', text: '4. The Caesar cipher shifts letters by moving them backwards in the alphabet.', answer: 'FALSE', explanation: '第二段說明是 shifted... down the alphabet (向後移，例如 A 變成 D，在英文邏輯中 down the alphabet 意指向後推移)。' },
+                                        { id: 'RA_5', text: '5. Al-Kindi\'s discovery of frequency analysis made simple ciphers useless.', answer: 'TRUE', explanation: '第二段結尾指出 This discovery rendered simple substitution ciphers obsolete (使其被淘汰/無用)。' },
+                                        { id: 'RA_6', text: '6. The Enigma machine was originally designed for secure banking transactions.', answer: 'NOT GIVEN', explanation: '文章提到它在二戰中被德國使用，但未提及它的「最初設計」是否為了銀行交易。' },
+                                        { id: 'RA_7', text: '7. Alan Turing built early computers to crack the German Enigma code.', answer: 'TRUE', explanation: '第三段提到 successfully cracked it by building early electro-mechanical computers known as "bombes."。' }
+                                    ]
+                                },
+                                {
+                                    type: 'fill', id: 'RA_P1_FILL', text: 'Questions 8-13: Complete the summary below. Choose ONE WORD ONLY from the passage.',
+                                    subQuestions: [
+                                        { id: 'RA_8', prefix: '8. Early Egyptian cryptography was used for mystery and', suffix: 'rather than secrecy.', answer: 'amusement', explanation: '第一段：add an element of mystery and amusement.' },
+                                        { id: 'RA_9', prefix: '9. Spartans wrote messages on a strip of', suffix: 'wrapped around a cylinder.', answer: 'parchment', explanation: '第一段：A strip of parchment was wrapped around...。' },
+                                        { id: 'RA_10', prefix: '10. The Caesar cipher shifted letters down the', suffix: 'by a set number.', answer: 'alphabet', explanation: '第二段：shifted a certain number of places down the alphabet。' },
+                                        { id: 'RA_11', prefix: '11. Arab mathematicians used', suffix: 'analysis to break simple codes.', answer: 'frequency', explanation: '第二段：discovered "frequency analysis"' },
+                                        { id: 'RA_12', prefix: '12. The German Enigma used an electromechanical', suffix: 'system to scramble letters.', answer: 'rotor', explanation: '第三段：utilized an electromechanical rotor system。' },
+                                        { id: 'RA_13', prefix: '13. Turing\'s team built early computers called', suffix: 'to decrypt messages.', answer: 'bombes', explanation: '第三段：early electro-mechanical computers known as "bombes"。' }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            title: "Passage 2: Cognitive Biases in Decision Making",
+                            passage: `
+                                <p class="mb-4">For a long time, classical economics operated on the assumption that human beings are rational agents who always make logical decisions to maximize their personal benefit. However, the relatively new field of behavioral economics has systematically dismantled this notion. Researchers like Daniel Kahneman and Amos Tversky have demonstrated that the human brain relies heavily on heuristics—mental shortcuts that help us make quick decisions without having to process massive amounts of information. While these shortcuts are evolutionarily useful for fast survival decisions, they frequently lead to predictable and systemic errors known as cognitive biases.</p>
+                                <p class="mb-4">One of the most pervasive cognitive biases is the "Confirmation Bias." This is the human tendency to actively search for, interpret, and favor information that confirms our pre-existing beliefs, while simultaneously ignoring or rejecting data that contradicts them. In the age of social media, algorithms exacerbate this bias by feeding users content that aligns with their historical clicks, creating an "echo chamber" effect. This severely limits intellectual growth and contributes heavily to the extreme political polarization witnessed in modern societies.</p>
+                                <p class="mb-4">Another powerful psychological error is the "Sunk Cost Fallacy." Rationally, a past investment of time, money, or effort (a sunk cost) that cannot be recovered should not influence a current decision. However, humans are highly averse to loss. For example, a person might continue watching a terrible movie simply because they have already paid for the ticket, or a company might continue funding a failing project because they have already invested millions into it. Overcoming these biases requires immense self-awareness and the implementation of structured, data-driven frameworks to override our flawed intuitive thinking.</p>
+                            `,
+                            questions: [
+                                {
+                                    type: 'mcq', id: 'RA_P2_MCQ', text: 'Questions 14-20: Choose the correct letter, A, B, or C.',
+                                    subQuestions: [
+                                        { id: 'RA_14', text: '14. What did classical economics assume about human beings?', options: ['A) They are driven by emotion.', 'B) They always make rational, logical decisions.', 'C) They use mental shortcuts to save time.'], answer: 'B', explanation: '第一段指出 classical economics operated on the assumption that human beings are rational agents who always make logical decisions。' },
+                                        { id: 'RA_15', text: '15. What are "heuristics" as described in the text?', options: ['A) Mental shortcuts for making quick decisions', 'B) Mathematical formulas used by computers', 'C) Psychological illnesses'], answer: 'A', explanation: '第一段定義 heuristics—mental shortcuts that help us make quick decisions。' },
+                                        { id: 'RA_16', text: '16. What is the primary characteristic of "Confirmation Bias"?', options: ['A) Changing your mind frequently', 'B) Favoring information that supports your existing beliefs', 'C) Ignoring all news media'], answer: 'B', explanation: '第二段說明 human tendency to actively search for, interpret, and favor information that confirms our pre-existing beliefs。' },
+                                        { id: 'RA_17', text: '17. How does social media affect Confirmation Bias?', options: ['A) It reduces it by showing diverse opinions.', 'B) It exacerbates it by creating echo chambers.', 'C) It has absolutely no effect.'], answer: 'B', explanation: '第二段指出 algorithms exacerbate this bias by... creating an "echo chamber" effect。' },
+                                        { id: 'RA_18', text: '18. What is the "Sunk Cost Fallacy"?', options: ['A) Letting unrecoverable past investments influence current decisions', 'B) Refusing to spend money on entertainment', 'C) Always choosing the cheapest option'], answer: 'A', explanation: '第三段解釋 a past investment... that cannot be recovered should not influence a current decision (然而人類常受其影響)。' },
+                                        { id: 'RA_19', text: '19. Why might someone finish watching a terrible movie?', options: ['A) Because they love the actors', 'B) Because they have already paid for the ticket', 'C) Because they want to write a review'], answer: 'B', explanation: '第三段舉例 continue watching a terrible movie simply because they have already paid for the ticket。' },
+                                        { id: 'RA_20', text: '20. How can humans overcome these cognitive biases?', options: ['A) By trusting their intuition more', 'B) By avoiding social media completely', 'C) By using self-awareness and data-driven frameworks'], answer: 'C', explanation: '第三段結論指出 requires immense self-awareness and the implementation of structured, data-driven frameworks。' }
+                                    ]
+                                },
+                                {
+                                    type: 'fill', id: 'RA_P2_FILL', text: 'Questions 21-27: Complete the sentences below with ONE WORD from Passage 2.',
+                                    subQuestions: [
+                                        { id: 'RA_21', prefix: '21. Behavioral economics proved that humans are not always', suffix: 'agents.', answer: 'rational', explanation: '第一段：human beings are rational agents' },
+                                        { id: 'RA_22', prefix: '22. Heuristics are useful for fast', suffix: 'decisions.', answer: 'survival', explanation: '第一段：evolutionarily useful for fast survival decisions' },
+                                        { id: 'RA_23', prefix: '23. Confirmation bias involves rejecting data that', suffix: 'our beliefs.', answer: 'contradicts', explanation: '第二段：rejecting data that contradicts them' },
+                                        { id: 'RA_24', prefix: '24. Social media algorithms create a negative "', suffix: 'chamber" effect.', answer: 'echo', explanation: '第二段：creating an "echo chamber" effect' },
+                                        { id: 'RA_25', prefix: '25. This chamber contributes to extreme political', suffix: 'in society.', answer: 'polarization', explanation: '第二段：extreme political polarization' },
+                                        { id: 'RA_26', prefix: '26. A sunk cost is an investment of time or money that cannot be', suffix: '.', answer: 'recovered', explanation: '第三段：that cannot be recovered' },
+                                        { id: 'RA_27', prefix: '27. People suffer from the Sunk Cost Fallacy because they are highly averse to', suffix: '.', answer: 'loss', explanation: '第三段：humans are highly averse to loss' }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            title: "Passage 3: Renewable Energy: Tidal and Wave Power",
+                            passage: `
+                                <p class="mb-4">As the global community attempts to phase out fossil fuels, much of the investment in renewable energy has been directed towards solar and wind power. However, the oceans, which cover over 70% of the Earth's surface, hold a vast and largely untapped reserve of kinetic and potential energy. Two of the most promising technologies in marine renewable energy are tidal power and wave power. While they both utilize the ocean, their underlying mechanics and technological maturity differ significantly.</p>
+                                <p class="mb-4">Tidal power harnesses the energy of ocean tides, which are driven by the predictable gravitational pull of the moon and the sun. This predictability is tidal power's greatest asset; unlike wind or solar, which are at the mercy of unpredictable weather, tidal currents can be forecasted years in advance. The most common method involves building a tidal barrage, a dam-like structure across an estuary. As the tide flows in and out, water is forced through turbines, generating electricity. Despite its high reliability, tidal barrage construction requires massive initial capital and can cause severe ecological disruption to local coastal wetlands, altering water salinity and impeding fish migration routes.</p>
+                                <p class="mb-4">Wave power, on the other hand, captures the energy from surface waves generated by the wind. Wave energy converters (WECs) come in various designs, from floating buoys that bob up and down, to massive snake-like steel tubes that flex with the wave motion to drive hydraulic pumps. The energy potential of waves is incredibly dense, particularly along the western coasts of continents. However, the wave power industry is still in its infancy. The extreme harshness of the marine environment—characterized by corrosive saltwater and devastating storm surges—makes it incredibly difficult to engineer devices that are both highly efficient and durable enough to survive for decades.</p>
+                            `,
+                            questions: [
+                                {
+                                    type: 'tfng', id: 'RA_P3_TF', text: 'Questions 28-34: Do the following statements agree with the claims of the writer? (YES / NO / NOT GIVEN)',
+                                    subQuestions: [
+                                        { id: 'RA_28', text: '28. Solar and wind power currently receive more investment than ocean energy.', answer: 'YES', explanation: '第一段指出 much of the investment... has been directed towards solar and wind power，而海洋是 untapped reserve。' },
+                                        { id: 'RA_29', text: '29. Tidal and wave power utilize the exact same mechanical technology.', answer: 'NO', explanation: '第一段結尾指出 their underlying mechanics and technological maturity differ significantly (機制與成熟度大不相同)。' },
+                                        { id: 'RA_30', text: '30. The movement of ocean tides can be predicted years into the future.', answer: 'YES', explanation: '第二段說明 tidal currents can be forecasted years in advance。' },
+                                        { id: 'RA_31', text: '31. A tidal barrage is a cheap and simple structure to build.', answer: 'NO', explanation: '第二段指出 requires massive initial capital (需要巨大的初期資金)。' },
+                                        { id: 'RA_32', text: '32. Wave energy converters (WECs) are mostly manufactured in Asia.', answer: 'NOT GIVEN', explanation: '文章未提及製造地點。' },
+                                        { id: 'RA_33', text: '33. Wave energy is particularly strong along the eastern coasts of continents.', answer: 'NO', explanation: '第三段說是 particularly along the western coasts of continents (西海岸)。' },
+                                        { id: 'RA_34', text: '34. Saltwater makes it challenging to build long-lasting wave power devices.', answer: 'YES', explanation: '第三段結尾指出 corrosive saltwater... makes it incredibly difficult to engineer devices... durable enough。' }
+                                    ]
+                                },
+                                {
+                                    type: 'matching', id: 'RA_P3_MATCH', text: 'Questions 35-40: Match the concept (35-40) to the type of energy it describes.',
+                                    options: ['Tidal Power', 'Wave Power', 'Both Tidal and Wave Power'],
+                                    subQuestions: [
+                                        { id: 'RA_35', text: '35. Driven by the gravitational pull of the moon and sun.', answer: 'Tidal Power', explanation: '第二段：Tidal power harnesses the energy... driven by the predictable gravitational pull of the moon and the sun。' },
+                                        { id: 'RA_36', text: '36. Captures energy from surface movements created by the wind.', answer: 'Wave Power', explanation: '第三段：Wave power, on the other hand, captures the energy from surface waves generated by the wind。' },
+                                        { id: 'RA_37', text: '37. Utilizes the ocean as its primary power source.', answer: 'Both Tidal and Wave Power', explanation: '第一段：While they both utilize the ocean...。' },
+                                        { id: 'RA_38', text: '38. Its construction can impede fish migration routes.', answer: 'Tidal Power', explanation: '第二段結尾提到 Tidal barrage... impeding fish migration routes。' },
+                                        { id: 'RA_39', text: '39. Can involve floating buoys or large flexing steel tubes.', answer: 'Wave Power', explanation: '第三段提到 WECs come in various designs, from floating buoys... to massive snake-like steel tubes。' },
+                                        { id: 'RA_40', text: '40. Has a massive advantage of complete predictability.', answer: 'Tidal Power', explanation: '第二段提到 This predictability is tidal power\'s greatest asset。' }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                general: {
+                    passages: [
+                        {
+                            title: "Section 1: Transport Card Rules & Museum Guide",
+                            passage: `
+                                <p class="mb-4"><strong>Part A: CityLink Transport Card Regulations</strong><br>The CityLink card allows cashless travel on all buses and trains. Cards must be registered online to protect your balance in case of loss. When boarding a bus, tap your card on the yellow reader; you do not need to tap off when exiting. However, for train journeys, you must tap both on and off at the station barriers, or you will be charged the maximum daily penalty fare of $15. Children under 5 travel free and do not require a card. A $5 replacement fee applies for lost cards.</p>
+                                <p class="mb-4"><strong>Part B: Metropolitan Museum Visitor Guide</strong><br>Welcome to the Metropolitan Museum. The museum is open Tuesday to Sunday, 9 AM to 5 PM, and is closed on Mondays. General admission is $18. Photography is permitted in the main galleries, but the use of flash is strictly forbidden to protect the delicate oil paintings. Large backpacks must be deposited in the cloakroom on the Ground Floor for $2. There is a guided highlights tour every day at 11 AM, which starts from the main lobby. The cafeteria on the top floor offers panoramic city views.</p>
+                            `,
+                            questions: [
+                                {
+                                    type: 'tfng', id: 'RG_S1_TF', text: 'Questions 1-8: Do the statements agree with the text? (TRUE / FALSE / NOT GIVEN)',
+                                    subQuestions: [
+                                        { id: 'RG_1', text: '1. Registering your CityLink card protects your money if you lose it.', answer: 'TRUE', explanation: 'Part A 說 registered online to protect your balance in case of loss。' },
+                                        { id: 'RG_2', text: '2. You must tap your card when getting off a bus.', answer: 'FALSE', explanation: 'Part A 說 you do not need to tap off when exiting (搭公車下車免刷)。' },
+                                        { id: 'RG_3', text: '3. The penalty for forgetting to tap off a train is $15.', answer: 'TRUE', explanation: 'Part A 說 charged the maximum daily penalty fare of $15。' },
+                                        { id: 'RG_4', text: '4. Students can buy the CityLink card at half price.', answer: 'NOT GIVEN', explanation: '文章未提及學生票價折扣。' },
+                                        { id: 'RG_5', text: '5. The museum is open 7 days a week.', answer: 'FALSE', explanation: 'Part B 說 is closed on Mondays。' },
+                                        { id: 'RG_6', text: '6. Taking photos with a flash will damage the oil paintings.', answer: 'TRUE', explanation: 'Part B 說 use of flash is strictly forbidden to protect the delicate oil paintings。' },
+                                        { id: 'RG_7', text: '7. The cloakroom for storing bags is free of charge.', answer: 'FALSE', explanation: 'Part B 說 deposited in the cloakroom... for $2。' },
+                                        { id: 'RG_8', text: '8. The guided tour requires a separate ticket.', answer: 'NOT GIVEN', explanation: '文章提及導覽時間與地點，但未提及是否需額外購票。' }
+                                    ]
+                                },
+                                {
+                                    type: 'fill', id: 'RG_S1_FILL', text: 'Questions 9-14: Complete the sentences with ONE WORD from the text.',
+                                    subQuestions: [
+                                        { id: 'RG_9', prefix: '9. The CityLink card allows', suffix: 'travel on public transport.', answer: 'cashless', explanation: 'allows cashless travel' },
+                                        { id: 'RG_10', prefix: '10. For trains, tap both on and off at the station', suffix: '.', answer: 'barriers', explanation: 'at the station barriers' },
+                                        { id: 'RG_11', prefix: '11. Getting a replacement for a lost card costs a $5', suffix: '.', answer: 'fee', explanation: 'A $5 replacement fee applies' },
+                                        { id: 'RG_12', prefix: '12. In the museum, using a', suffix: 'on your camera is banned.', answer: 'flash', explanation: 'the use of flash is strictly forbidden' },
+                                        { id: 'RG_13', prefix: '13. Store your large', suffix: 'in the Ground Floor cloakroom.', answer: 'backpacks', explanation: 'Large backpacks must be deposited' },
+                                        { id: 'RG_14', prefix: '14. The daily guided tour starts in the main', suffix: '.', answer: 'lobby', explanation: 'starts from the main lobby' }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            title: "Section 2: Remote Work Policies & Employee Benefits",
+                            passage: `
+                                <p class="mb-4"><strong>Remote Work and Flexitime Policy</strong><br>Our company supports a hybrid working model. Eligible employees may work from home up to two days a week (usually Tuesdays and Thursdays). You must ensure you have a stable internet connection and a quiet workspace. While working remotely, core hours of 10:00 AM to 3:00 PM apply, during which you must be online and available for video meetings. If your home internet fails, you are expected to commute to the office. Equipment such as laptops and headsets will be provided, but ergonomic desk chairs must be purchased at your own expense.</p>
+                                <p class="mb-4"><strong>Employee Health and Wellness Benefits</strong><br>We offer a comprehensive health package. After completing a 3-month probation period, employees are enrolled in the premium dental and vision insurance plan. Additionally, the company provides a $50 monthly 'wellness stipend'. This money can be used to pay for gym memberships, yoga classes, or meditation apps. To claim the stipend, submit your receipts via the finance app by the 5th of each month. Furthermore, we offer a free confidential counseling hotline for mental health support, available 24/7.</p>
+                            `,
+                            questions: [
+                                {
+                                    type: 'matching', id: 'RG_S2_MATCH', text: 'Questions 15-20: Match the statement to the correct category.',
+                                    options: ['Remote Work Policy', 'Health and Wellness Benefits'],
+                                    subQuestions: [
+                                        { id: 'RG_15', text: '15. You must be online during specific hours of the day.', answer: 'Remote Work Policy', explanation: '遠距規定：core hours of 10:00 AM to 3:00 PM apply... must be online。' },
+                                        { id: 'RG_16', text: '16. Receipts must be uploaded via an application.', answer: 'Health and Wellness Benefits', explanation: '福利規定：submit your receipts via the finance app。' },
+                                        { id: 'RG_17', text: '17. The company does not pay for your desk chair.', answer: 'Remote Work Policy', explanation: '遠距規定：ergonomic desk chairs must be purchased at your own expense。' },
+                                        { id: 'RG_18', text: '18. A probation period must be passed first.', answer: 'Health and Wellness Benefits', explanation: '福利規定：After completing a 3-month probation period...。' },
+                                        { id: 'RG_19', text: '19. You must go to the office if you have technical issues.', answer: 'Remote Work Policy', explanation: '遠距規定：If your home internet fails, you are expected to commute...。' },
+                                        { id: 'RG_20', text: '20. A phone service is available for mental support.', answer: 'Health and Wellness Benefits', explanation: '福利規定：offer a free confidential counseling hotline。' }
+                                    ]
+                                },
+                                {
+                                    type: 'fill', id: 'RG_S2_FILL', text: 'Questions 21-27: Complete the sentences with ONE WORD ONLY.',
+                                    subQuestions: [
+                                        { id: 'RG_21', prefix: '21. The company utilizes a', suffix: 'working model.', answer: 'hybrid', explanation: 'supports a hybrid working model' },
+                                        { id: 'RG_22', prefix: '22. You must have a', suffix: 'internet connection at home.', answer: 'stable', explanation: 'have a stable internet connection' },
+                                        { id: 'RG_23', prefix: '23. The company will provide items like laptops and', suffix: '.', answer: 'headsets', explanation: 'laptops and headsets will be provided' },
+                                        { id: 'RG_24', prefix: '24. New staff have a 3-month', suffix: 'period.', answer: 'probation', explanation: '3-month probation period' },
+                                        { id: 'RG_25', prefix: '25. The insurance plan covers dental and', suffix: 'care.', answer: 'vision', explanation: 'premium dental and vision insurance' },
+                                        { id: 'RG_26', prefix: '26. The wellness', suffix: 'is worth $50 a month.', answer: 'stipend', explanation: 'provides a $50 monthly \'wellness stipend\'' },
+                                        { id: 'RG_27', prefix: '27. The counseling hotline is completely', suffix: 'and available 24/7.', answer: 'confidential', explanation: 'free confidential counseling hotline' }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            title: "Section 3: The Invention of the Paperclip",
+                            passage: `
+                                <p class="mb-4">Before the invention of the paperclip, keeping sheets of paper together in a busy office was a frustrating task. Clerks primarily used straight metal pins to pierce through documents. While this held the papers securely, it caused permanent damage, left unsightly holes, and frequently pricked the fingers of the workers. Ribbon and wax were also used for more formal documents, but this process was incredibly slow and expensive. The need for a simple, non-destructive fastener was evident.</p>
+                                <p class="mb-4">The modern paperclip, specifically the famous double-oval "Gem" design, does not have one single recognized inventor. In the late 19th century, machines were developed that could easily bend and shape stiff steel wire. In 1899, an American named William Middlebrook patented a machine designed specifically to mass-produce wire paperclips. The Gem Manufacturing Company in Britain was one of the first to market this specific looped design, and it was so successful that in many European languages, the word for paperclip is simply translated as "gem."</p>
+                                <p class="mb-4">Interestingly, an earlier patent for a paperclip was filed in 1899 by a Norwegian inventor named Johan Vaaler. His design was slightly different, lacking the inner loop of the Gem clip, making it less functional because it could not hold paper as tightly. Despite this, the paperclip became a powerful national symbol in Norway during World War II. When Nazi Germany occupied Norway and banned citizens from wearing pins featuring their exiled King's initials, Norwegians began wearing paperclips on their lapels. It was a subtle, silent protest, symbolizing unity and resistance, showing how a simple piece of bent wire could hold both papers and a nation together.</p>
+                            `,
+                            questions: [
+                                {
+                                    type: 'mcq', id: 'RG_S3_MCQ', text: 'Questions 28-34: Choose the correct letter A, B or C.',
+                                    subQuestions: [
+                                        { id: 'RG_28', text: '28. How were papers mostly kept together before the paperclip?', options: ['A) With glue', 'B) With straight metal pins', 'C) With heavy stones'], answer: 'B', explanation: '第一段說明 Clerks primarily used straight metal pins to pierce through documents。' },
+                                        { id: 'RG_29', text: '29. What was the main problem with using straight pins?', options: ['A) They were too expensive.', 'B) They rusted quickly.', 'C) They damaged the paper and hurt people\'s fingers.'], answer: 'C', explanation: '第一段指出 caused permanent damage, left unsightly holes, and frequently pricked the fingers。' },
+                                        { id: 'RG_30', text: '30. Who is considered the single inventor of the "Gem" paperclip?', options: ['A) William Middlebrook', 'B) Johan Vaaler', 'C) There is no single recognized inventor.'], answer: 'C', explanation: '第二段提到 does not have one single recognized inventor。' },
+                                        { id: 'RG_31', text: '31. What did William Middlebrook actually patent in 1899?', options: ['A) A machine to mass-produce wire paperclips', 'B) The name "Gem"', 'C) A new type of steel wire'], answer: 'A', explanation: '第二段解釋 patented a machine designed specifically to mass-produce wire paperclips。' },
+                                        { id: 'RG_32', text: '32. Why was Johan Vaaler\'s paperclip design inferior to the Gem design?', options: ['A) It was too sharp.', 'B) It lacked an inner loop and couldn\'t hold paper tightly.', 'C) It was made of cheap plastic.'], answer: 'B', explanation: '第三段說明 lacking the inner loop of the Gem clip, making it less functional because it could not hold paper as tightly。' },
+                                        { id: 'RG_33', text: '33. Why did Norwegians wear paperclips during World War II?', options: ['A) Because buttons were too expensive', 'B) As a silent protest and symbol of unity', 'C) To show they worked in an office'], answer: 'B', explanation: '第三段說明 It was a subtle, silent protest, symbolizing unity and resistance。' },
+                                        { id: 'RG_34', text: '34. What did the Nazi occupiers ban Norwegians from wearing?', options: ['A) Red coats', 'B) Pins with the King\'s initials', 'C) Metal jewelry'], answer: 'B', explanation: '第三段提到 banned citizens from wearing pins featuring their exiled King\'s initials。' }
+                                    ]
+                                },
+                                {
+                                    type: 'tfng', id: 'RG_S3_TF', text: 'Questions 35-40: Do the statements agree with the text? (TRUE / FALSE / NOT GIVEN)',
+                                    subQuestions: [
+                                        { id: 'RG_35', text: '35. Using ribbon and wax to hold papers was a very fast process.', answer: 'FALSE', explanation: '第一段指出 this process was incredibly slow and expensive。' },
+                                        { id: 'RG_36', text: '36. The invention of machines that could bend stiff steel wire was crucial for the paperclip.', answer: 'TRUE', explanation: '第二段提到 machines were developed that could easily bend and shape stiff steel wire，促成了迴紋針的大量生產。' },
+                                        { id: 'RG_37', text: '37. The Gem Manufacturing Company was based in America.', answer: 'FALSE', explanation: '第二段提到 The Gem Manufacturing Company in Britain (在英國)。' },
+                                        { id: 'RG_38', text: '38. In some European languages, the word for paperclip is "gem".', answer: 'TRUE', explanation: '第二段指出 in many European languages, the word for paperclip is simply translated as "gem."。' },
+                                        { id: 'RG_39', text: '39. Johan Vaaler made a fortune selling his paperclip in Norway.', answer: 'NOT GIVEN', explanation: '文章沒有提到他是否賺了大錢。' },
+                                        { id: 'RG_40', text: '40. The paperclip was used as a weapon by the Norwegian resistance.', answer: 'FALSE', explanation: '第三段描述它是 silent protest, symbolizing unity (作為象徵符號)，而非 weapon (武器)。' }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            writing: {
+                academic: {
+                    task1: {
+                        prompt: "The pie charts below show the primary reasons for migration to a specific country in the years 2000 and 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+                        hasData: true,
+                        chartType: 'pie',
+                        chartData: {
+                            labels: ['Employment', 'Study', 'Family', 'Other'],
+                            datasets: [
+                                { 
+                                    label: 'Year 2000 (%)', 
+                                    data: [50, 20, 15, 15], 
+                                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'] 
+                                },
+                                { 
+                                    label: 'Year 2020 (%)', 
+                                    data: [35, 35, 20, 10], 
+                                    backgroundColor: ['#60a5fa', '#34d399', '#fbbf24', '#f87171'] 
+                                }
+                            ]
+                        },
+                        chartOptions: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: { display: true, text: 'Reasons for Migration (Inner: 2000, Outer: 2020)', font: { size: 16 } },
+                                legend: { position: 'bottom' },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ' - ' + context.label + ': ' + context.raw + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        dataPoints: [
+                            "Year 2000: Employment (50%), Study (20%), Family (15%), Other (15%)",
+                            "Year 2020: Employment (35%), Study (35%), Family (20%), Other (10%)"
+                        ],
+                        sample: `The two pie charts compare the primary motivations for people migrating to a particular nation in two separate years, 2000 and 2020.<br><br>
+                        Overall, it is evident that while employment was the overwhelmingly dominant reason for immigration in 2000, its significance declined over the two decades. Conversely, the proportion of people moving for educational purposes experienced substantial growth, resulting in study and work becoming equally compelling reasons to migrate by 2020.<br><br>
+                        In 2000, exactly half (50%) of all immigrants relocated primarily for employment opportunities. However, twenty years later, this figure had dropped significantly by 15 percentage points to stand at 35%. In stark contrast, migrating for study saw a dramatic increase. Originally accounting for just a fifth (20%) of the total in 2000, the pursuit of education surged to 35% in 2020, tying with employment as the joint leading motivation.<br><br>
+                        The remaining reasons constituted smaller proportions but still exhibited noticeable changes. Moving to join family members saw a slight upward trend, growing from 15% in 2000 to a fifth (20%) of the total in 2020. Meanwhile, migration for 'other' unspecified reasons declined slightly over the period, dropping from 15% to make up only one-tenth (10%) of the demographic in 2020.<br><br>
+                        <strong class="text-blue-800">考官評語 (Band 8.0)：</strong>文章運用了極佳的比較與趨勢描述詞彙 (overwhelmingly dominant, declined over the two decades, tying with, joint leading motivation)。對於圓餅圖的數據轉換也十分到位 (exactly half, a fifth, one-tenth)。`
+                    },
+                    task2: {
+                        prompt: "Some people think that the government should strictly restrict the amount of sugar allowed in manufactured food and drinks to improve public health. Others believe that it is the individual's responsibility to manage their own diet.<br><br>Discuss both views and give your own opinion.",
+                        sample: `The escalating global crisis of diet-related diseases, such as obesity and type 2 diabetes, has sparked a fierce debate regarding government intervention in the food industry. While some argue that citizens should bear sole personal responsibility for their dietary choices, others advocate for strict governmental restrictions on the sugar content in manufactured products. In my opinion, while personal autonomy is important, the pervasive nature of hidden sugars in modern diets necessitates strong legislative action to safeguard public health.<br><br>
+                        Proponents of individual responsibility argue that in a free society, governments should not dictate what people can or cannot consume. They contend that adults possess the agency to read nutritional labels and make informed decisions about their caloric intake. From this perspective, implementing draconian sugar limits is a form of paternalistic overreach, often dubbed a "nanny state" policy. Furthermore, opponents of regulation argue that focusing exclusively on sugar oversimplifies the obesity epidemic, which is equally driven by sedentary lifestyles and a lack of physical exercise. Therefore, the solution lies in education rather than restriction.<br><br>
+                        Conversely, advocates for government intervention emphasize that the food environment is fundamentally deceptive. Manufactured goods, ranging from seemingly healthy yogurts to pasta sauces, are frequently saturated with hidden sugars designed to heighten palatability and addictiveness. Consequently, even well-intentioned individuals find it incredibly difficult to regulate their intake. By imposing a mandatory cap on sugar levels or levying a heavy "sugar tax," governments can force corporations to reformulate their products. This systemic change protects vulnerable demographics, particularly children, who are disproportionately targeted by aggressive junk food marketing.<br><br>
+                        From my perspective, relying solely on willpower is a failed public health strategy when confronting multinational food corporations that engineer highly addictive products. Just as governments regulate the amount of toxic chemicals in water or the safety features in cars, they possess a moral obligation to regulate harmful ingredients in our food supply.<br><br>
+                        In conclusion, although educating the public on nutrition remains crucial, it is insufficient on its own. To effectively combat the devastating health and economic consequences of sugar overconsumption, rigorous governmental restrictions on manufactured foods are absolutely imperative.<br><br>
+                        <strong class="text-blue-800">考官評語 (Band 8.0)：</strong>文章具備極高的連貫性 (Cohesion)，雙方觀點探討深入。單字使用精準且極具學術感 (paternalistic overreach, deceptive, palatability, levying a heavy "sugar tax", imperative)，結論明確，完全符合高分標準。`
+                    }
+                },
+                general: {
+                    task1: {
+                        prompt: "<strong>You recently noticed several deep potholes on the road outside your house, which are dangerous for cars and bicycles.</strong><br><br>Write a letter to your local city council. In your letter:<br>- Explain who you are and where you live<br>- Describe the problem with the road and why it is dangerous<br>- Suggest what action the council should take",
+                        hasData: false,
+                        sample: `Dear Sir or Madam,<br><br>
+                        I am writing to draw your urgent attention to a severe maintenance issue on the road outside my property.<br><br>
+                        My name is Robert Williams, and I have been a resident at 45 Maple Avenue for the past ten years. Over the last month, the condition of the road surface directly in front of my driveway has deteriorated significantly. There are now three deep potholes that are progressively widening due to the recent heavy rainfall.<br><br>
+                        This situation is becoming incredibly dangerous. During the day, drivers are forced to swerve suddenly into the oncoming lane to avoid damaging their tires, which has already caused several near-miss accidents. Furthermore, at night, the street lighting in our area is quite dim. Last week, a cyclist failed to see the largest pothole, fell off his bike, and sustained minor injuries. If left unattended, it is only a matter of time before a serious collision occurs.<br><br>
+                        Therefore, I urgently request that the council dispatch a road maintenance crew to inspect the site as soon as possible. The potholes need to be properly filled and the road resurfaced to ensure the safety of our local residents and passing traffic.<br><br>
+                        I look forward to your prompt response and action regarding this serious safety hazard.<br><br>Yours faithfully,<br>Robert Williams<br><br>
+                        <strong class="text-blue-800">考官評語 (Band 8.0)：</strong>此為標準的正式 (Formal) 抱怨信件。語氣堅定且具邏輯性 (urgent attention, deteriorated significantly, near-miss accidents)。清晰覆蓋了題目要求的三個重點，並具體描述了危險情境，令人信服。`
+                    },
+                    task2: {
+                        prompt: "Some students choose to take a gap year (a year off between finishing high school and starting university) to travel or work.<br><br>Do the advantages of this practice outweigh the disadvantages?",
+                        sample: `In recent years, the concept of a "gap year"—taking a twelve-month break between secondary education and university—has gained immense popularity among school leavers. While some traditionalists argue that this hiatus disrupts academic momentum, I firmly believe that the advantages of taking a gap year, particularly in terms of personal growth and real-world experience, significantly outweigh the potential disadvantages.<br><br>
+                        The primary concern regarding a gap year is the loss of academic continuity. Critics argue that a year away from formal education can cause students to lose their study habits, making the rigorous transition to university-level mathematics or sciences jarring and difficult. Furthermore, traveling or interning abroad can be a costly endeavor. If a gap year is not structured properly, it can easily degenerate into an unproductive, expensive vacation, leaving the student financially strained and academically disadvantaged compared to peers who enrolled directly into university.<br><br>
+                        Despite these risks, a well-planned gap year offers unparalleled benefits. Firstly, it fosters profound personal development and independence. Traveling independently requires young adults to navigate foreign cultures, manage budgets, and solve unpredictable logistical problems. This forces them out of their comfort zones, cultivating resilience and maturity—traits that are indispensable for success in higher education and adult life.<br><br>
+                        Secondly, working or volunteering during a gap year provides vital clarity regarding career aspirations. Many teenagers feel pressured to choose a university major without any practical understanding of the working world. A gap year allows them to intern in various fields, helping them discover their true passions. Consequently, students who have taken a gap year often return to their studies with renewed focus, greater intrinsic motivation, and a clearer sense of purpose, leading to lower university dropout rates.<br><br>
+                        In conclusion, while a gap year carries the inherent risk of breaking academic habits and wasting funds, these issues can be easily mitigated through careful planning and setting clear goals. The profound enhancement in maturity, cultural awareness, and career direction makes a gap year an overwhelmingly advantageous choice for young adults.<br><br>
+                        <strong class="text-blue-800">考官評語 (Band 8.0)：</strong>文章結構為標準的 "Advantages vs Disadvantages" 題型。作者清楚表明了立場 (優點大於缺點)。詞彙非常進階 (hiatus, disrupts academic momentum, degenerate, indispensable, intrinsic motivation)，充分展現了學術寫作能力。`
+                    }
+                }
+            }
+        };
+
+        /* ================= 初始化與 UI 控制 ================= */
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            renderListening();
+            renderReading();
+            renderWriting();
+            startTimer();
+
+            // 字數統計綁定
+            document.getElementById('task1-input').addEventListener('input', function() {
+                countWords(this.value, 'task1-word-count');
+            });
+            document.getElementById('task2-input').addEventListener('input', function() {
+                countWords(this.value, 'task2-word-count');
+            });
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                el.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            document.getElementById(`content-${tabName}`).classList.add('active');
+            const activeTab = document.getElementById(`tab-${tabName}`);
+            activeTab.classList.remove('border-transparent', 'text-gray-500');
+            activeTab.classList.add('active', 'border-blue-500', 'text-blue-600');
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            
+            const btnAcademic = document.getElementById('mode-academic');
+            const btnGeneral = document.getElementById('mode-general');
+            
+            if (mode === 'academic') {
+                btnAcademic.className = 'px-4 py-1.5 rounded-md bg-white shadow text-sm font-bold text-blue-800 transition';
+                btnGeneral.className = 'px-4 py-1.5 rounded-md text-sm font-bold text-gray-500 hover:text-gray-800 transition';
+            } else {
+                btnGeneral.className = 'px-4 py-1.5 rounded-md bg-white shadow text-sm font-bold text-blue-800 transition';
+                btnAcademic.className = 'px-4 py-1.5 rounded-md text-sm font-bold text-gray-500 hover:text-gray-800 transition';
+            }
+
+            // 重新渲染內容
+            renderReading();
+            renderWriting();
+            
+            // 隱藏可能已經開啟的成績或範文
+            document.getElementById('task1-sample').classList.add('hidden');
+            document.getElementById('task2-sample').classList.add('hidden');
+            const writingScoreDisplay = document.getElementById('writing-score-display');
+            if(writingScoreDisplay) writingScoreDisplay.classList.add('hidden');
+        }
+
+        // 計時器邏輯 
+        let timeLeft = 150 * 60; 
+        function startTimer() {
+            const timerEl = document.getElementById('timer');
+            timerInterval = setInterval(() => {
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    gradeAll(); // 時間到自動全卷結算
+                    return;
+                }
+                timeLeft--;
+                const h = Math.floor(timeLeft / 3600);
+                const m = Math.floor((timeLeft % 3600) / 60);
+                const s = timeLeft % 60;
+                timerEl.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        function countWords(text, displayId) {
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+            document.getElementById(displayId).textContent = words.length;
+        }
+
+        /* ================= 語音播放 (TTS) ================= */
+        let engVoices = [];
+        function loadVoices() {
+            engVoices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'));
+        }
+        if ('speechSynthesis' in window) {
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        }
+
+        const voiceProfiles = {
+            'Agent':        { pitch: 1.1, rate: 0.95, gender: 'male' },   
+            'Customer':     { pitch: 1.4, rate: 0.92, gender: 'female' }, 
+            'Guide':        { pitch: 1.2, rate: 0.94, gender: 'female' }, 
+            'Alex':         { pitch: 0.9, rate: 0.95, gender: 'male' },   
+            'Sarah':        { pitch: 1.4, rate: 0.95, gender: 'female' }, 
+            'Dr. Lee':      { pitch: 0.7, rate: 0.85, gender: 'male' },   
+            'Professor':    { pitch: 0.8, rate: 0.88, gender: 'male' }    
+        };
+
+        function getVoiceForProfile(profile) {
+            if (!engVoices || engVoices.length === 0) return null;
+            let gbVoices = engVoices.filter(v => v.lang === 'en-GB');
+            let pool = gbVoices.length > 0 ? gbVoices : engVoices;
+            
+            if (profile.gender === 'female') {
+                return pool.find(v => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('woman')) || pool[0];
+            } else if (profile.gender === 'male') {
+                return pool.find(v => v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('man')) || pool[pool.length - 1];
+            }
+            return pool[0];
+        }
+
+        function parseDialogue(htmlContent) {
+            let tmp = document.createElement("div");
+            tmp.innerHTML = htmlContent;
+            
+            let dialogues = [];
+            let currentSpeaker = "Narrator";
+            let currentText = "";
+
+            tmp.childNodes.forEach(node => {
+                if (node.nodeName === 'STRONG' && node.textContent.trim().endsWith(':')) {
+                    if (currentText.trim()) {
+                        dialogues.push({ speaker: currentSpeaker, text: currentText.trim() });
+                    }
+                    currentSpeaker = node.textContent.replace(':', '').trim();
+                    currentText = "";
+                } else if (node.nodeName === 'BR') {
+                    currentText += " ";
+                } else {
+                    currentText += node.textContent || "";
+                }
+            });
+            
+            if (currentText.trim()) {
+                dialogues.push({ speaker: currentSpeaker, text: currentText.trim() });
+            }
+            
+            return dialogues;
+        }
+
+        function playAudio(elementId) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); 
+                
+                const htmlContent = document.getElementById(elementId).innerHTML;
+                const dialogues = parseDialogue(htmlContent); 
+                
+                dialogues.forEach(line => {
+                    let utterance = new SpeechSynthesisUtterance(line.text);
+                    let profile = voiceProfiles[line.speaker] || { pitch: 1.0, rate: 0.9, gender: 'female' };
+                    
+                    utterance.lang = 'en-GB';
+                    utterance.pitch = profile.pitch;
+                    utterance.rate = profile.rate;
+                    
+                    let voice = getVoiceForProfile(profile);
+                    if (voice) utterance.voice = voice;
+                    
+                    window.speechSynthesis.speak(utterance);
+                });
+
+            } else {
+                alert("您的瀏覽器不支援語音朗讀功能，請直接使用內建音檔。");
+            }
+        }
+
+        function stopAudio() {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        /* ================= 渲染內容 ================= */
+        
+        let task1ChartInstance = null;
+
+        function renderListening() {
+            const container = document.getElementById('listening-sections');
+            let html = '';
+
+            ieltsData.listening.sections.forEach((section, index) => {
+                html += `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-2xl font-bold mb-2 text-gray-900">${section.title}</h2>
+                    <p class="text-gray-600 mb-4 italic leading-relaxed">${section.instruction}</p>
+                    
+                    <div class="bg-gray-100 p-4 rounded-lg mb-6 border border-gray-300">
+                        <div class="flex flex-wrap items-center gap-3 mb-2">
+                            <button onclick="playAudio('raw-transcript-${index}')" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg font-bold flex items-center shadow-sm transition">
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                                播放音檔 (Play Audio)
+                            </button>
+                            <button onclick="stopAudio()" class="bg-red-500 hover:bg-red-600 text-white px-5 py-2 rounded-lg font-bold flex items-center shadow-sm transition">
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
+                                停止 (Stop)
+                            </button>
+                        </div>
+                        <div id="raw-transcript-${index}" class="hidden">${section.transcript}</div>
+                    </div>
+                    
+                    <div class="space-y-6">
+                `;
+
+                section.questions.forEach((q) => {
+                    if (q.type === 'mcq') {
+                        html += `
+                        <div class="mb-4" id="container-${q.id}">
+                            <p class="font-bold text-lg mb-3">${q.text}</p>
+                            <div class="space-y-2 pl-4">
+                                ${q.options.map((opt, i) => {
+                                    const letter = String.fromCharCode(65 + i);
+                                    return `
+                                    <label class="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition border border-transparent hover:border-gray-200">
+                                        <input type="radio" name="${q.id}" value="${letter}" class="form-radio h-5 w-5 text-blue-600">
+                                        <span class="text-gray-700 text-lg">${opt}</span>
+                                    </label>`
+                                }).join('')}
+                            </div>
+                            <div id="exp-${q.id}" class="hidden mt-4 text-base p-4 rounded bg-gray-50 border-l-4 shadow-sm"></div>
+                        </div>`;
+                    } else if (q.type === 'matching') {
+                        html += `
+                        <div class="mb-4 bg-gray-50 p-5 rounded-lg border border-gray-200">
+                            <p class="font-bold text-lg mb-4">${q.text}</p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                ${q.options.map(opt => `<span class="bg-white border border-gray-300 px-3 py-1 rounded text-sm font-medium shadow-sm">${opt}</span>`).join('')}
+                            </div>
+                            <div class="space-y-4">
+                                ${q.subQuestions.map(sq => `
+                                    <div class="flex items-center space-x-4" id="container-${sq.id}">
+                                        <p class="w-2/3 text-gray-800 text-lg">${sq.text}</p>
+                                        <select id="${sq.id}" class="w-1/3 form-select block p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-base">
+                                            <option value="">Select...</option>
+                                            ${q.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div id="exp-${sq.id}" class="hidden mb-4 text-base p-4 rounded bg-white border-l-4 shadow-sm"></div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    } else if (q.type === 'fill') {
+                        html += `
+                        <div class="mb-4 bg-blue-50 p-5 rounded-lg border border-blue-100">
+                            <p class="font-bold text-lg mb-4 text-blue-900">${q.text}</p>
+                            <div class="space-y-4">
+                                ${q.subQuestions.map(sq => `
+                                    <div class="text-lg" id="container-${sq.id}">
+                                        ${sq.prefix} 
+                                        <input type="text" id="${sq.id}" class="mx-2 p-1 border-b-2 border-gray-500 bg-white focus:outline-none focus:border-blue-600 text-center w-40 font-bold text-blue-800 shadow-inner rounded-sm" placeholder="your answer"> 
+                                        ${sq.suffix}
+                                    </div>
+                                    <div id="exp-${sq.id}" class="hidden mb-4 text-base p-4 rounded bg-white border-l-4 shadow-sm"></div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    }
+                });
+
+                html += `</div></div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderReading() {
+            const data = ieltsData.reading[currentMode];
+
+            const passageContainer = document.getElementById('reading-passage');
+            const qContainer = document.getElementById('reading-questions');
+            
+            let passagesHtml = '';
+            let questionsHtml = '';
+
+            data.passages.forEach((passage, pIndex) => {
+                passagesHtml += `
+                <div class="mb-12 pb-8 border-b-2 border-gray-300">
+                    <h2 class="text-3xl font-bold mb-6 font-serif text-gray-900 leading-tight">${passage.title}</h2>
+                    <div class="prose max-w-none font-serif text-gray-800 leading-loose text-justify text-lg">
+                        ${passage.passage}
+                    </div>
+                </div>`;
+
+                questionsHtml += `<h4 class="text-2xl font-bold text-blue-800 mt-10 mb-6 border-b-2 border-blue-200 pb-2">${passage.title} - Questions</h4>`;
+                
+                passage.questions.forEach((q) => {
+                    if (q.type === 'tfng') {
+                        questionsHtml += `
+                        <div class="mb-6 bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
+                            <p class="font-bold text-lg mb-4">${q.text}</p>
+                            <div class="space-y-4">
+                                ${q.subQuestions.map(sq => `
+                                    <div class="pb-4 border-b border-gray-200 last:border-0 last:pb-0" id="container-${sq.id}">
+                                        <p class="font-medium text-gray-800 text-lg mb-3">${sq.text}</p>
+                                        <div class="flex space-x-6">
+                                            ${['TRUE', 'FALSE', 'NOT GIVEN', 'YES', 'NO'].map(opt => `
+                                                <label class="flex items-center space-x-2 cursor-pointer">
+                                                    <input type="radio" name="${sq.id}" value="${opt}" class="form-radio h-5 w-5 text-blue-600">
+                                                    <span class="text-base font-medium">${opt}</span>
+                                                </label>
+                                            `).join('')}
+                                        </div>
+                                        <div id="exp-${sq.id}" class="hidden mt-3 text-base p-3 rounded bg-white border-l-4 shadow-sm"></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    } else if (q.type === 'mcq') {
+                        questionsHtml += `
+                        <div class="mb-6 bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
+                            <p class="font-bold text-lg mb-4">${q.text}</p>
+                            <div class="space-y-4">
+                                ${q.subQuestions.map(sq => `
+                                    <div class="pb-4 border-b border-gray-200 last:border-0 last:pb-0" id="container-${sq.id}">
+                                        <p class="font-medium text-gray-800 text-lg mb-3">${sq.text}</p>
+                                        <div class="space-y-2 pl-4">
+                                            ${sq.options.map((opt, i) => {
+                                                const letter = String.fromCharCode(65 + i);
+                                                return `
+                                                <label class="flex items-center space-x-3 cursor-pointer hover:bg-white p-2 rounded transition">
+                                                    <input type="radio" name="${sq.id}" value="${letter}" class="form-radio h-5 w-5 text-blue-600">
+                                                    <span class="text-gray-700 text-lg">${opt}</span>
+                                                </label>`
+                                            }).join('')}
+                                        </div>
+                                        <div id="exp-${sq.id}" class="hidden mt-3 text-base p-3 rounded bg-white border-l-4 shadow-sm"></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    } else if (q.type === 'matching') {
+                        questionsHtml += `
+                        <div class="mb-6 bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
+                            <p class="font-bold text-lg mb-4">${q.text}</p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                ${q.options.map(opt => `<span class="bg-white border border-gray-300 px-3 py-1 rounded text-sm font-medium shadow-sm">${opt}</span>`).join('')}
+                            </div>
+                            <div class="space-y-4">
+                                ${q.subQuestions.map(sq => `
+                                    <div class="flex items-center space-x-4" id="container-${sq.id}">
+                                        <p class="w-2/3 text-gray-800 text-lg">${sq.text}</p>
+                                        <select id="${sq.id}" class="w-1/3 form-select block p-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-base shadow-inner">
+                                            <option value="">Select...</option>
+                                            ${q.options.map(opt => `<option value="${opt}">${opt}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                    <div id="exp-${sq.id}" class="hidden mb-4 text-base p-4 rounded bg-white border-l-4 shadow-sm"></div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    } else if (q.type === 'fill') {
+                        questionsHtml += `
+                        <div class="mb-6 bg-blue-50 p-5 rounded-lg border border-blue-200 shadow-sm">
+                            <p class="font-bold text-lg mb-4 text-blue-900">${q.text}</p>
+                            <div class="space-y-5">
+                                ${q.subQuestions.map(sq => `
+                                    <div class="text-lg leading-loose" id="container-${sq.id}">
+                                        ${sq.prefix} 
+                                        <input type="text" id="${sq.id}" class="mx-2 p-1 border-b-2 border-gray-500 bg-white focus:outline-none focus:border-blue-600 text-center w-40 font-bold text-blue-800 shadow-inner rounded-sm" placeholder="your answer"> 
+                                        ${sq.suffix}
+                                    </div>
+                                    <div id="exp-${sq.id}" class="hidden mt-2 mb-4 text-base p-4 rounded bg-white border-l-4 shadow-sm"></div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    }
+                });
+            });
+
+            passageContainer.innerHTML = passagesHtml;
+            qContainer.innerHTML = questionsHtml;
+        }
+
+        function renderWriting() {
+            const data = ieltsData.writing[currentMode];
+            
+            // Task 1
+            document.getElementById('writing-task1-prompt').innerHTML = data.task1.prompt;
+            const dataContainer = document.getElementById('writing-task1-data-container');
+            if (data.task1.hasData) {
+                dataContainer.classList.remove('hidden');
+                
+                if (data.task1.chartType) {
+                    document.getElementById('writing-task1-data').classList.add('hidden');
+                    document.getElementById('task1-chart').classList.remove('hidden');
+                    
+                    if (task1ChartInstance) {
+                        task1ChartInstance.destroy();
+                    }
+                    
+                    const ctx = document.getElementById('task1-chart').getContext('2d');
+                    task1ChartInstance = new Chart(ctx, {
+                        type: data.task1.chartType,
+                        data: data.task1.chartData,
+                        options: data.task1.chartOptions
+                    });
+                } else {
+                    document.getElementById('writing-task1-data').classList.remove('hidden');
+                    document.getElementById('task1-chart').classList.add('hidden');
+                    document.getElementById('writing-task1-data').innerHTML = data.task1.dataPoints.map(d => `<li>${d}</li>`).join('');
+                }
+            } else {
+                dataContainer.classList.add('hidden');
+            }
+            document.getElementById('task1-sample').innerHTML = data.task1.sample;
+
+            // Task 2
+            document.getElementById('writing-task2-prompt').innerHTML = data.task2.prompt;
+            document.getElementById('task2-sample').innerHTML = data.task2.sample;
+            
+            // 清空輸入框
+            document.getElementById('task1-input').value = '';
+            document.getElementById('task2-input').value = '';
+            document.getElementById('task1-word-count').textContent = '0';
+            document.getElementById('task2-word-count').textContent = '0';
+        }
+
+        /* ================= 切換流程控制 ================= */
+
+        function nextToReading() {
+            switchTab('reading');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function nextToWriting() {
+            switchTab('writing');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        /* ================= 全卷統一評分邏輯 (Grade All) ================= */
+
+        // 依據雅思官方 40 題對照表計算 Band Score
+        function calculateBand(score, type, mode = 'academic') {
+            if (score === 0) return 0.0; 
+            
+            if (type === 'listening' || (type === 'reading' && mode === 'academic')) {
+                if (score >= 39) return 9.0;
+                if (score >= 37) return 8.5;
+                if (score >= 35) return 8.0;
+                if (score >= 33) return 7.5;
+                if (score >= 30) return 7.0;
+                if (score >= 27) return 6.5;
+                if (score >= 23) return 6.0;
+                if (score >= 20) return 5.5;
+                if (score >= 16) return 5.0;
+                if (score >= 13) return 4.5;
+                if (score >= 10) return 4.0;
+                if (score >= 6) return 3.5;
+                if (score >= 4) return 3.0;
+                if (score === 3) return 2.5;
+                if (score === 2) return 2.0;
+                if (score === 1) return 1.0;
+            } 
+            else if (type === 'reading' && mode === 'general') {
+                if (score === 40) return 9.0;
+                if (score === 39) return 8.5;
+                if (score === 38) return 8.0;
+                if (score >= 36) return 7.5;
+                if (score >= 34) return 7.0;
+                if (score >= 32) return 6.5;
+                if (score >= 30) return 6.0;
+                if (score >= 26) return 5.5;
+                if (score >= 23) return 5.0;
+                if (score >= 19) return 4.5;
+                if (score >= 15) return 4.0;
+                if (score >= 12) return 3.5;
+                if (score >= 8) return 3.0;
+                if (score >= 5) return 2.5;
+                if (score >= 2) return 2.0;
+                if (score === 1) return 1.0;
+            }
+            return 0.0;
+        }
+
+        function showFeedback(id, isCorrect, correctAnswer, explanation) {
+            const expDiv = document.getElementById(`exp-${id}`);
+            if (!expDiv) return;
+
+            expDiv.classList.remove('hidden');
+            if (isCorrect) {
+                expDiv.classList.add('correct-answer');
+                expDiv.classList.remove('wrong-answer');
+                expDiv.innerHTML = `<strong class="text-green-700 text-lg">✅ Correct!</strong><br><span class="text-gray-800 mt-2 block">${explanation}</span>`;
+            } else {
+                expDiv.classList.add('wrong-answer');
+                expDiv.classList.remove('correct-answer');
+                expDiv.innerHTML = `<strong class="text-red-700 text-lg">❌ Incorrect. The correct answer is: ${correctAnswer}</strong><br><span class="text-gray-800 mt-2 block">${explanation}</span>`;
+            }
+        }
+
+        function gradeListeningLogic() {
+            let score = 0;
+            ieltsData.listening.sections.forEach(sec => {
+                sec.questions.forEach(q => {
+                    if (q.type === 'mcq') {
+                        const selected = document.querySelector(`input[name="${q.id}"]:checked`);
+                        const val = selected ? selected.value : null;
+                        const isCorrect = val === q.answer;
+                        if (isCorrect) score++;
+                        showFeedback(q.id, isCorrect, q.answer, q.explanation);
+                    } else if (q.type === 'matching' || q.type === 'fill') {
+                        q.subQuestions.forEach(sq => {
+                            const inputEl = document.getElementById(sq.id);
+                            if (!inputEl) return;
+                            const val = inputEl.value.trim().toLowerCase();
+                            const ans = sq.answer.toLowerCase();
+                            const isCorrect = val === ans;
+                            if (isCorrect) score++;
+                            
+                            if (q.type === 'fill') {
+                                inputEl.classList.remove('text-blue-800', 'border-gray-500');
+                                if (isCorrect) {
+                                    inputEl.classList.add('text-green-600', 'border-green-500');
+                                } else {
+                                    inputEl.classList.add('text-red-600', 'border-red-500');
+                                }
+                            }
+                            showFeedback(sq.id, isCorrect, sq.answer, sq.explanation);
+                        });
+                    }
+                });
+            });
+            window.testScores.listening = calculateBand(score, 'listening');
+        }
+
+        function gradeReadingLogic() {
+            let score = 0;
+            const data = ieltsData.reading[currentMode];
+
+            data.passages.forEach(passage => {
+                passage.questions.forEach(q => {
+                    q.subQuestions.forEach(sq => {
+                        let isCorrect = false;
+                        
+                        if (q.type === 'tfng' || q.type === 'mcq') {
+                            const selected = document.querySelector(`input[name="${sq.id}"]:checked`);
+                            const val = selected ? selected.value : null;
+                            isCorrect = val === sq.answer;
+                        } else if (q.type === 'fill' || q.type === 'matching') {
+                            const el = document.getElementById(sq.id);
+                            if (!el) return;
+                            const val = el.value.trim().toLowerCase();
+                            const ans = sq.answer.toLowerCase();
+                            isCorrect = val === ans;
+                            
+                            if (q.type === 'fill') {
+                                el.classList.remove('text-blue-800', 'border-gray-500');
+                                if (isCorrect) {
+                                    el.classList.add('text-green-600', 'border-green-500');
+                                } else {
+                                    el.classList.add('text-red-600', 'border-red-500');
+                                }
+                            }
+                        }
+                        showFeedback(sq.id, isCorrect, sq.answer, sq.explanation);
+                    });
+                });
+            });
+            window.testScores.reading = calculateBand(score, 'reading', currentMode);
+        }
+
+        function evaluateEssay(text, taskType) {
+            if (!text || !text.trim()) return { score: 0.0, feedback: "未作答 (No answer provided)" };
+
+            let words = text.trim().split(/\s+/);
+            let wordCount = words.length;
+            
+            // 防呆機制：如果字數極低
+            if (wordCount < 10) {
+                return { score: 1.0, feedback: "字數極少，無法評估 (Insufficient words for assessment) (-4.0)" };
+            }
+            
+            let score = 5.0;
+            let feedback = [];
+
+            if (taskType === 1) {
+                if (wordCount < 100) { score -= 1.5; feedback.push("字數嚴重不足 (-1.5)"); }
+                else if (wordCount < 150) { score -= 0.5; feedback.push("未達 150 字最低要求 (-0.5)"); }
+                else if (wordCount >= 200) { score += 0.5; feedback.push("字數充裕且圖表細節發展完整 (+0.5)"); }
+                else { feedback.push("字數達最低標準 (+0)"); }
+            } else {
+                if (wordCount < 150) { score -= 1.5; feedback.push("字數嚴重不足 (-1.5)"); }
+                else if (wordCount < 250) { score -= 0.5; feedback.push("未達 250 字最低要求 (-0.5)"); }
+                else if (wordCount >= 320) { score += 0.5; feedback.push("字數充裕且論點發展充分 (+0.5)"); }
+                else { feedback.push("字數達最低標準 (+0)"); }
+            }
+
+            const advancedWords = ['furthermore', 'moreover', 'however', 'nevertheless', 'consequently', 'subsequently', 'undeniably', 'inevitably', 'significant', 'substantial', 'demonstrate', 'illustrate', 'conversely', 'profound', 'crucial', 'vital', 'essential', 'perspective', 'contend', 'assert', 'mitigate', 'detrimental', 'beneficial', 'advantageous', 'overall', 'in conclusion', 'to summarize', 'whereas', 'although', 'despite', 'therefore', 'thus', 'hence', 'indicate', 'suggest', 'imply', 'facilitate', 'hinder', 'exacerbate', 'ameliorate', 'predominantly', 'notably'];
+            let advancedCount = 0;
+            let lowerText = text.toLowerCase();
+            advancedWords.forEach(word => {
+                if (lowerText.includes(word)) advancedCount++;
+            });
+
+            if (advancedCount < 3) { score -= 0.5; feedback.push("缺乏進階學術與轉折詞彙 (-0.5)"); }
+            else if (advancedCount >= 6 && advancedCount < 10) { score += 0.5; feedback.push("使用了部分學術與轉折詞彙 (+0.5)"); }
+            else if (advancedCount >= 10 && advancedCount < 15) { score += 1.0; feedback.push("學術詞彙與轉折語氣運用良好 (+1.0)"); }
+            else if (advancedCount >= 15) { score += 1.5; feedback.push("連接詞與進階詞彙極其豐富 (+1.5)"); }
+            else { feedback.push("基礎詞彙運用尚可 (+0)"); }
+
+            let paragraphs = text.split(/\n+/).filter(p => p.trim().length > 0);
+            if (paragraphs.length < 2) {
+                score -= 1.0; feedback.push("文章完全沒有分段 (-1.0)");
+            } else if (paragraphs.length === 2) {
+                score -= 0.5; feedback.push("段落結構過於簡單 (-0.5)");
+            } else if (paragraphs.length >= 4 && paragraphs.length <= 6) {
+                score += 0.5; feedback.push("具備良好的多段落邏輯結構 (+0.5)");
+            } else {
+                feedback.push("具備基本分段 (+0)");
+            }
+
+            let sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+            if (sentences.length > 0) {
+                let avgSentenceLength = wordCount / sentences.length;
+                if (avgSentenceLength < 10) { score -= 0.5; feedback.push("句型過短，缺乏複合句 (-0.5)"); }
+                else if (avgSentenceLength > 16) { score += 0.5; feedback.push("句型長度與複雜句結構佳 (+0.5)"); }
+                else { feedback.push("句型長度適中 (+0)"); }
+            }
+
+            if (score > 8.0) score = 8.0;
+            if (score < 1.0) score = 1.0;
+            score = Math.round(score * 2) / 2;
+
+            return { score: score, feedback: feedback.join('、') };
+        }
+
+        function gradeWritingLogic() {
+            const task1Text = document.getElementById('task1-input').value;
+            const task2Text = document.getElementById('task2-input').value;
+
+            const task1Result = evaluateEssay(task1Text, 1);
+            const task2Result = evaluateEssay(task2Text, 2);
+
+            let overallScore = 0.0;
+            if (task1Result.score > 0 || task2Result.score > 0) {
+                const t1 = task1Result.score > 0 ? task1Result.score : 0;
+                const t2 = task2Result.score > 0 ? task2Result.score : 0;
+                overallScore = (t1 + t2 * 2) / 3;
+                overallScore = Math.round(overallScore * 2) / 2;
+            }
+            window.testScores.writing = overallScore;
+
+            // 展開範文
+            document.getElementById('task1-sample').classList.remove('hidden');
+            document.getElementById('task2-sample').classList.remove('hidden');
+
+            // 顯示寫作評分結果
+            const display = document.getElementById('writing-score-display');
+            display.innerHTML = `
+                <div class="space-y-5">
+                    <div class="border-b border-blue-200 pb-4">
+                        <span class="font-bold text-xl text-blue-900 flex items-center">
+                            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Task 1 預估分數：${task1Result.score > 0 ? task1Result.score.toFixed(1) : '0.0 (未作答)'}
+                        </span>
+                        <p class="text-gray-700 mt-2 ml-8 leading-relaxed"><strong>📝 評分依據：</strong>${task1Result.feedback}</p>
+                    </div>
+                    <div class="border-b border-blue-200 pb-4">
+                        <span class="font-bold text-xl text-blue-900 flex items-center">
+                            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            Task 2 預估分數：${task2Result.score > 0 ? task2Result.score.toFixed(1) : '0.0 (未作答)'}
+                        </span>
+                        <p class="text-gray-700 mt-2 ml-8 leading-relaxed"><strong>📝 評分依據：</strong>${task2Result.feedback}</p>
+                    </div>
+                    <div class="pt-4 text-center">
+                        <span class="text-gray-800 text-2xl font-bold block">總結預估 Writing Band Score: <span class="text-blue-700 text-4xl ml-2">${overallScore.toFixed(1)}</span></span>
+                        <p class="text-red-600 text-sm mt-4 bg-red-50 p-3 rounded border border-red-200 inline-block text-left shadow-sm">
+                            <strong>⚠️ 嚴格評分模式已啟用：</strong>本系統採用雅思四大評分項目（Task Achievement, Coherence, Lexical Resource, Grammatical Range）進行推估。未作答或字數過少將直接判定為 0.0 ~ 1.0 分。
+                        </p>
+                    </div>
+                </div>
+            `;
+            display.classList.remove('hidden');
+            display.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // 統一把三科成績一起結算
+        function gradeAll() {
+            // ================= 防呆機制：檢查必填欄位 =================
+            const studentId = document.getElementById('student-id').value.trim();
+            const branch = document.getElementById('student-branch').value.trim();
+            const name = document.getElementById('student-name').value.trim();
+
+            if (!studentId || !branch || !name) {
+                alert("請先至畫面上方填寫完整的考生資訊（學員編號、分校、姓名）再提交試卷！");
+                
+                // 自動捲動到最上方並加上紅框提示
+                document.getElementById('student-info-bar').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (!studentId) document.getElementById('student-id').classList.add('ring-2', 'ring-red-500');
+                if (!branch) document.getElementById('student-branch').classList.add('ring-2', 'ring-red-500');
+                if (!name) document.getElementById('student-name').classList.add('ring-2', 'ring-red-500');
+                
+                // 3秒後移除紅框
+                setTimeout(() => {
+                    document.querySelectorAll('input').forEach(el => el.classList.remove('ring-2', 'ring-red-500'));
+                }, 3000);
+                
+                return; // 中斷結算程式，不會顯示成績
+            }
+
+            if (!confirm("確定要提交全卷嗎？\n提交後將無法修改答案，並會顯示所有科目的成績與詳解。")) {
+                return;
+            }
+
+            // 停止計時
+            if(timerInterval) clearInterval(timerInterval);
+            
+            // 計算三科分數並把 DOM 回饋塞入
+            gradeListeningLogic();
+            gradeReadingLogic();
+            gradeWritingLogic();
+
+            // 計算 Overall Band
+            let overall = (window.testScores.listening + window.testScores.reading + window.testScores.writing) / 3;
+            overall = Math.round(overall * 2) / 2;
+            window.testScores.overall = overall;
+
+            // 更新下方成績單看板
+            document.getElementById('summary-l').textContent = window.testScores.listening.toFixed(1);
+            document.getElementById('summary-r').textContent = window.testScores.reading.toFixed(1);
+            document.getElementById('summary-w').textContent = window.testScores.writing.toFixed(1);
+            document.getElementById('summary-overall').textContent = window.testScores.overall.toFixed(1);
+
+            const banner = document.getElementById('final-submission-banner');
+            banner.classList.remove('hidden', 'translate-y-full');
+            banner.classList.add('translate-y-0');
+
+            // 鎖定全卷提交按鈕防呆
+            const btn = document.getElementById('submit-all-btn');
+            btn.disabled = true;
+            btn.textContent = "✅ 已結算全卷成績";
+            btn.classList.add('cursor-not-allowed', 'opacity-75');
+            btn.classList.remove('hover:bg-red-700');
+        }
+
+        /* ================= 發送成績至 Formspree ================= */
+        async function submitToFormspree() {
+            const studentId = document.getElementById('student-id').value.trim();
+            const branch = document.getElementById('student-branch').value.trim();
+            const name = document.getElementById('student-name').value.trim();
+            const msgEl = document.getElementById('submit-msg');
+            const btn = document.getElementById('submit-formspree-btn');
+
+            btn.disabled = true;
+            btn.classList.remove('animate-pulse');
+            btn.textContent = "發送中...";
+            msgEl.classList.add('hidden');
+
+            const payload = {
+                "學員編號 (Student ID)": studentId,
+                "分校 (Branch)": branch,
+                "姓名 (Name)": name,
+                "聽力成績 (Listening)": window.testScores.listening,
+                "閱讀成績 (Reading)": window.testScores.reading,
+                "寫作成績 (Writing)": window.testScores.writing,
+                "雅思總級分 (Overall Band)": window.testScores.overall
+            };
+
+            try {
+                const response = await fetch("https://formspree.io/f/xreraowb", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    msgEl.textContent = "✅ 成績已成功寄出！";
+                    msgEl.classList.remove('hidden', 'text-yellow-300');
+                    msgEl.classList.add('text-green-400');
+                    btn.textContent = "已寄送";
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    throw new Error("Network response was not ok.");
+                }
+            } catch (error) {
+                console.error(error);
+                msgEl.textContent = "❌ 發送失敗，請檢查網路連線";
+                msgEl.classList.remove('hidden', 'text-green-400');
+                msgEl.classList.add('text-yellow-300');
+                btn.disabled = false;
+                btn.textContent = "重新寄送";
+                btn.classList.add('animate-pulse');
+            }
+        }
+    </script>
+</body>
+</html>
